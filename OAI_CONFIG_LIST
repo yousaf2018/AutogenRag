@@ -1,0 +1,5 @@
+[{
+    "base_url": "http://localhost:1234/v1",
+    "api_key": "null",
+    "model": "mistral-7b-instruct-v0.1.Q2_K.gguf"
+}]

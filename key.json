@@ -1,0 +1,13 @@
+{
+    "type": "service_account",
+    "project_id": "tweets-zero-theorem",
+    "private_key_id": "42bf69eb1057fac5e2fa255b4a42c083bc4edbfc",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC2oRlTmOt9YoR6\nBeq+EHP59saxtJQ7lamoS/X1NIGckdP5rtw2Tc7ZHNLWRFOeFQdeo+Abcyq/e0Zm\n5D+a7/HLQIISn/eKdPJ8uZWTfwK8qk/3qjB6kCV6LAQ/TAJVp6uCsDBf88T8dOLJ\niSATBdCrp9vJ0l0VECZ7/68U6v0qFQySuryrqKvcZRXOimU6MUdcYbds7UhiG7oP\n0z+aXU6O7jWXAQZqTHxqxf68+n81UYlWs7Nx3n9xiZMU0W/3YNwUm53PRucMiLid\n5rwPZ8AvNkGGlNJxrDlC0Fz/vS635KVb6/MXmFylUUAR0vHngjUnrI2G7VmhoitC\nNuqGttAXAgMBAAECggEAFfL5rMLptomTG2k/o7UtgyLGEZB+6kRb/haXCm/TjgI2\nxEDgRYSHci+VJVxT4mFrn9O5OQNX5WiG9xHClTf2SvPHTj68jP7uL9BMKkxvA0bC\n0qS5K9nML0k//21+sFW09sF/JuEQ0TipEwiweqjNwfusHi7ysffdcDS0EaMGZzqo\n2kj6pObWMoWhKdEoSLy7+0pUsPsVh1QUK9Vdj6Oh2cAHh3omB8LZzcCHrFYUd+dp\nd8T76og0kA5F2qFH+YATfKm83XNO9nLTSM/E0qFtrr08+H4MSPBCybnkeAPbvn0Y\nGKt2Xg5tsmT0klHeudUZF0vVkndkZoSuvdS24pwvYQKBgQD612tdWZ1V5ZVXpQaQ\nvFimsALOO+qLanZ20xVUDvroplgKVbM8O2FbssmCjPiW+JHoV4oH+XaxKLKru5HX\nw6+xWO7CmhjDnifEb1XsNq7w27Kki/0BomQCAPvhTTHQns8L7OGskWk/r63eHSSU\nTCXMtGvu35kCM4NrZ3R5IyD7IQKBgQC6YpHKvhz7JH+SPOAl4R9HgQT+09XirBd9\nc2RyO0cMVmn1H4uGz2Ip0NsCv8VMOrzBtC7MjnyJ8O12fU4Bcx4Y0R57Qae/Gy5f\noNLmW3fgoMHQkWJfsBQ0qE1Z0T93srWJpURz0JInaiLCEh0EMCCO/AWunlPf5ELi\nB5jdvUFcNwKBgBcxzC+5lZ7Xt9N+4viHMftX0yqWx71UftfF9Pbs266fkwyBmC09\noGcGRTPZLTNokLVXQuAx5RPEm6Ddm0LESX6wpoNAFIIiIbM8SEmrVMnYxtAIUcDQ\n70ZwKNpQdQbBaIvFv6hhWcYVzJH5R+SelfAzzrcr3c4iTUilLFP3N5mBAoGAcoyd\n+bK58QfPd7r+L4maRcHfphXfP/5wOWOv+hzAX67EVChdAi92ryhzUc82nNEErS/m\nC0YO+GAgMVB1nqJ3ft0XFL2XMPatm4wl0fmpRV7Hfz267gAziuFdGLRng1NMCxqN\nZXhsOtkaH5guSSKi//2YKGeaOOH60RvGMZFdGCUCgYBgX+vzXbgCozlf/XH36uiD\njbTAz2OgCDmnxF0H6cr58aF0wCXosNRQVNmN8ajwPMHv0Gbvc2ftvmriGCiVa+6E\nifoEP6oaO5RhvDhsBPvKGcF9LyAKrXCYpm62oUJnVjQU8O7zxhUEayiYWWqAJB05\nItBf1vgeCWP8vohGqq1qBg==\n-----END PRIVATE KEY-----\n",
+    "client_email": "firebase-adminsdk-9nav7@tweets-zero-theorem.iam.gserviceaccount.com",
+    "client_id": "108067773392226671772",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-9nav7%40tweets-zero-theorem.iam.gserviceaccount.com"
+  }
+  

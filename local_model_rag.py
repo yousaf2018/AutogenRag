@@ -15,7 +15,7 @@ os.environ["GOOGLE_API_KEY"] = "AIzaSyB8eLanCYOHzsW-BVexCV1T7uKMeLRsTUI"
 
 genai.configure(api_key="AIzaSyB8eLanCYOHzsW-BVexCV1T7uKMeLRsTUI")
 app = Flask(__name__)
-CORS(app, resources={r"/ask": {"origins": "http://localhost:3000"}})
+CORS(app, resources={r"/ask": {"origins": "*"}})
 # CORS(app, resources={r"/ask": {"origins": "https://bitpredict.ai"}})
 # Load and preprocess your data
 txt_file_path = 'data.txt'

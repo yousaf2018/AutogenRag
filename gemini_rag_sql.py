@@ -21,6 +21,37 @@ from langchain.schema.runnable import RunnableMap
 from langchain_core.output_parsers import JsonOutputParser
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from sqlalchemy import create_engine
+import pandas as pd 
+from sqlalchemy import text 
+import mysql.connector
+
+
+host = 'localhost'
+port = str(3306)
+username = 'root'
+password = 'bitpredict'
+database_schema = 'bitpredict'
+# mysql_uri = f"mysql+pymysql://{username}:{password}@{host}:{port}/{database_schema}"
+mydb = mysql.connector.connect(
+    host = "localhost",
+    user = "root",
+    password = "bitpredict",
+    database = "bitpredict"
+)
+ 
+cursor = mydb.cursor()
+ 
+# # Show existing tables
+# cursor.execute("select * from stats")
+ 
+# for x in cursor:
+#   print(x)
+print("Connection to database is successfull")
+
+
+
+
 safety_settings=[
   {
     "category": "HARM_CATEGORY_DANGEROUS",
@@ -50,19 +81,20 @@ CORS(app, resources={r"/ask": {"origins": "*"}})
 os.environ["GOOGLE_API_KEY"] = "AIzaSyB8eLanCYOHzsW-BVexCV1T7uKMeLRsTUI"
 
 genai.configure(api_key="AIzaSyB8eLanCYOHzsW-BVexCV1T7uKMeLRsTUI")
-prompt_parts_1 = [
-    "You are an expert in converting English questions to SQL code! The SQL database has the name Stats and has the following columns - rank, strategy_name, current_drawdown, curr_drawdown_duration, average_drawdown, average_drawdown_duration, max_drawdown, max_drawdown_duration, r2_score, sharpe, sortino, total_pnl, average_daily_pnl, win_loss_ratio, total_positive_pnl, total_negative_pnl, total_wins, total_losses, consective_wins, consective_losses, win_percentage, loss_percentage, pnl_sum_1, pnl_sum_7, pnl_sum_15, pnl_sum_30, pnl_sum_45, pnl_sum_60, alpha, beta.\n\n",
-    "For example,\n",
-    "Example 1 - How many entries have a rank present?\n",
-    "SELECT COUNT(*) FROM Stats;\n\n",
-    "Example 2 - How many entries have a current_drawdown greater than 0.5?\n",
-    "SELECT COUNT(*) FROM Stats WHERE current_drawdown > 0.5;\n\n",
-    "Example 3 - What is the average drawdown?\n",
-    "SELECT AVG(average_drawdown) FROM Stats;\n\n",
-    "Example 4 - What is the maximum drawdown duration?\n",
-    "SELECT MAX(max_drawdown_duration) FROM Stats;\n\n",
-    "Don't include ``` and \\n in the output",
-]
+# prompt_parts_1 = [
+#     "You are an expert in converting English questions to SQL code! The SQL database has the name Stats and has the following columns - rank, strategy_name, current_drawdown, curr_drawdown_duration, average_drawdown, average_drawdown_duration, max_drawdown, max_drawdown_duration, r2_score, sharpe, sortino, total_pnl, average_daily_pnl, win_loss_ratio, total_positive_pnl, total_negative_pnl, total_wins, total_losses, consective_wins, consective_losses, win_percentage, loss_percentage, pnl_sum_1, pnl_sum_7, pnl_sum_15, pnl_sum_30, pnl_sum_45, pnl_sum_60, alpha, beta.\n\n",
+#     "For example,\n",
+#     "Example 1 - How many entries have a rank present?\n",
+#     "SELECT COUNT(*) FROM Stats;\n\n",
+#     "Example 2 - How many entries have a current_drawdown greater than 0.5?\n",
+#     "SELECT COUNT(*) FROM Stats WHERE current_drawdown > 0.5;\n\n",
+#     "Example 3 - What is the average drawdown?\n",
+#     "SELECT AVG(average_drawdown) FROM Stats;\n\n",
+#     "Example 4 - What is the maximum drawdown duration?\n",
+#     "SELECT MAX(max_drawdown_duration) FROM Stats;\n\n",
+#     "Don't include ``` and \\n in the output",
+    
+# ]
 
 model = ChatGoogleGenerativeAI(model="gemini-pro",
                              temperature=0.7, safety_settings=safety_settings)
@@ -134,12 +166,22 @@ vectorstore = DocArrayInMemorySearch.from_texts(
 
 )
 
-retriever = vectorstore.as_retriever()
+retriever = vectorstore.as_retriever(search_type="mmr")
 
-template = """You should reply like Bitassit as your name and do not tell users that you are responsing from specific context and reply based on the following context:
+template = """
+ "You are secretly expert in sql database and make sure donot tell users about sql database     and make sure you are resonding on specific query related to database  which you will not reveal to public If user question are related database stats in following than reply as You are an expert in converting English questions to SQL code! The SQL database has the name Stats and has the following columns - rank, strategy_name, current_drawdown, curr_drawdown_duration, average_drawdown, average_drawdown_duration, max_drawdown, max_drawdown_duration, r2_score, sharpe, sortino, total_pnl, average_daily_pnl, win_loss_ratio, total_positive_pnl, total_negative_pnl, total_wins, total_losses, consective_wins, consective_losses, win_percentage, loss_percentage, pnl_sum_1, pnl_sum_7, pnl_sum_15, pnl_sum_30, pnl_sum_45, pnl_sum_60, alpha, beta.\n\n",
+    "For example,\n",
+    "Example 1 - How many entries have a rank present?\n",
+    "SELECT COUNT(*) FROM Stats;\n\n",
+    "Example 2 - How many entries have a current_drawdown greater than 0.5?\n",
+    "SELECT COUNT(*) FROM Stats WHERE current_drawdown > 0.5;\n\n",
+    "Example 3 - What is the average drawdown?\n",
+    "SELECT AVG(average_drawdown) FROM Stats;\n\n",
+    "Example 4 - What is the maximum drawdown duration?\n",
+    "SELECT MAX(max_drawdown_duration) FROM Stats;\n\n",
+    "When you are replying sql query than reply with backticks like this ```select * from stats```,
+    You should reply like Bitassit as your name and ensure donot tell user about your sql skill expertise as it's secrect. if user wants to chitchat with you than reply accordingly and do not tell users that you are responsing from specific context and reply based on the following context:
 {context} 
-Return you answer as string and make sure your response to user must be complete and concise and if user query does not exists in context than reply responsibly as Bitassist
-
 Question: {question}
 """
 prompt = ChatPromptTemplate.from_template(template)
@@ -154,8 +196,21 @@ chain = RunnableMap({
 # while True:
 #     question = str(input("Human input --->"))
 #     # print(chain.invoke({"question": question}))
-#     for s in chain.stream({"question": question}):
-#         print(s)
+#     ans_text = ""
+#     for answer in chain.stream({"question": question}):
+#         ans_text += answer
+
+#     if "sql" in ans_text or "```" in ans_text or "SELECT" in ans_text:
+#         # Show existing tables
+#         ans_text = ans_text.replace("```", "")
+#         ans_text = ans_text.replace("sql", "")
+#         cursor.execute(ans_text)
+#         rows = ""
+#         for x in cursor:
+#             rows += str(x) 
+#         print(rows)
+#     else:
+#         print(ans_text)
 
 @app.route('/ask', methods=['GET'])
 def ask_question():
@@ -176,7 +231,22 @@ def ask_question():
                     ans_text += answer
                     # print(answer)
                 # Return the answer as JSON response
-                return jsonify({'response': ans_text}), 200
+
+                if "sql" in ans_text or "```" in ans_text or "SELECT" in ans_text:
+                    # Show existing tables
+                    ans_text = ans_text.replace("```", "")
+                    ans_text = ans_text.replace("sql", "")
+                    cursor.execute(ans_text)
+                    rows = ""
+                    for x in cursor:
+                        rows += str(x) 
+                    print(rows)
+                    return jsonify({'response': rows}), 200
+                else:
+                    print(ans_text)
+                    return jsonify({'response': ans_text}), 200
+
+                    
             except Exception as e:
                 return jsonify({'response': f'Kindly ask questions related to bit predict'}), 500
         else:

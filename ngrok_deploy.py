@@ -10,7 +10,7 @@ from datetime import datetime as dt
 
 # Start your Node.js app
 python_app_directory = 'C:\\Users\\neurog\\Desktop\\AutogenRag'
-python_app = subprocess.Popen(['python', 'gemini_rag_sql.py'], cwd=python_app_directory)
+python_app = subprocess.Popen(['python', 'ollama_chatbot.py'], cwd=python_app_directory)
 
 # Give some time for your Node.js app to start
 time.sleep(10)

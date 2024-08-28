@@ -1,10 +1,3 @@
-import ollama
-import psycopg2
-from psycopg2 import OperationalError
-from flask import Flask, request, jsonify
-import re
-import sys
-import os
 from langchain.vectorstores import Chroma
 from langchain.embeddings import GPT4AllEmbeddings
 from langchain import PromptTemplate
@@ -13,7 +6,8 @@ from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.chains import RetrievalQA
 from langchain.schema import Document
-from flask_cors import CORS
+import sys
+import os
 
 class SuppressStdout:
     def __enter__(self):
@@ -27,6 +21,7 @@ class SuppressStdout:
         sys.stdout = self._original_stdout
         sys.stderr = self._original_stderr
 
+# Directly use the provided text data
 text_data = [
 "Is Bitpredict only focused on Bitcoin forecasting?\nWhile our primary focus is on Bitcoin forecasting, our platform is designed to adapt, and we have plans to expand our capabilities to cover other cryptocurrencies in the future.\n\n",
     "How often are new models added to Bitpredict?\nWe are continuously innovating and expanding our model offerings. New models are added regularly to ensure that users have access to the latest advancements in cryptocurrency forecasting.\n\n",
@@ -86,295 +81,42 @@ text_data = [
 
     ]
 
+# Create Document objects
+documents = [Document(page_content=text) for text in text_data]
 
-def extract_sql_query(query_string):
-    """
-    Extract the SQL query from a string formatted with triple backticks,
-    and remove any extraneous prefixes or surrounding text.
-    """
-    pattern = r'```([\s\S]*?)```'
-    match = re.search(pattern, query_string, re.DOTALL)
-    
-    if match:
-        # Extract and trim the query content
-        sql_query = match.group(1).strip()
-        
-        # Remove any prefix like 'sql' followed by whitespace
-        sql_query = re.sub(r'^\s*sql\s+', '', sql_query)
-        
-        # Normalize whitespace within the query
-        sql_query = re.sub(r'\s+', ' ', sql_query)
-        
-        return sql_query
-    else:
-        raise ValueError("No SQL query found in the provided string.")
+# Split text into chunks
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-app = Flask(__name__)
-CORS(app, resources={r"/ask": {"origins": "*"}})
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
+all_splits = text_splitter.split_documents(documents)
 
-# Database connection parameters
-db_params = {
-    'host': '193.22.147.204',
-    'port': '5432',
-    'dbname': 'bitpredict',
-    'user': 'admin',
-    'password': '9Hd2mTg5Kw'
-}
+with SuppressStdout():
+    vectorstore = Chroma.from_documents(documents=all_splits, embedding=GPT4AllEmbeddings())
 
-def get_db_connection():
-    """Establish a connection to the PostgreSQL database."""
-    try:
-        connection = psycopg2.connect(**db_params)
-        print("Database successfully connected")
-        return connection
-    except OperationalError as e:
-        print(f"Database connection error: {e}")
-        return None
+while True:
+    query = input("\nQuery: ")
+    if query == "exit":
+        break
+    if query.strip() == "":
+        continue
 
-
-database_schema = """
-CREATE TABLE "stats"."models_stats"(
-   "frontend_model_name" character varying,
-   "time_horizon" character varying,
-   "symbol" character varying,
-   "rolling_window" character varying,
-   "start_date" bigint,
-   "last_forecast" bigint,
-   "next_forecast" bigint,
-   "best_performing_conditions" character varying,
-   "pnl_percent" double precision,
-   "current_prediction" character varying,
-   "entry_price" double precision,
-   "current_price" double precision,
-   "current_pnl" double precision,
-   "avg_daily_pnl" double precision,
-   "pnl_1d" double precision,
-   "pnl_7d" double precision,
-   "pnl_15d" double precision,
-   "pnl_30d" double precision,
-   "pnl_45d" double precision,
-   "pnl_60d" double precision,
-   "total_long_pnl" double precision,
-   "avg_long_pnl_per_trade" double precision,
-   "num_long_trades" double precision,
-   "win_rate_long_trades" double precision,
-   "avg_long_trade_duration" double precision,
-   "max_long_trade_pnl" double precision,
-   "min_long_trade_pnl" double precision,
-   "pct_long_trades" double precision,
-   "total_short_pnl" double precision,
-   "avg_short_pnl_per_trade" double precision,
-   "num_short_trades" double precision,
-   "win_rate_short_trades" double precision,
-   "avg_short_trade_duration" double precision,
-   "max_short_trade_pnl" double precision,
-   "min_short_trade_pnl" double precision,
-   "pct_short_trades" double precision,
-   "total_return" double precision,
-   "cagr" double precision,
-   "monthly_return" double precision,
-   "weekly_return" double precision,
-   "daily_return" double precision,
-   "sharpe_ratio" double precision,
-   "sortino_ratio" double precision,
-   "calmar_ratio" double precision,
-   "alpha" double precision,
-   "beta" double precision,
-   "r2" double precision,
-   "information_ratio" double precision,
-   "treynor_ratio" double precision,
-   "profit_factor" double precision,
-   "omega_ratio" double precision,
-   "gain_to_pain_ratio" double precision,
-   "max_drawdown" double precision,
-   "max_drawdown_days" double precision,
-   "avg_drawdown" double precision,
-   "avg_drawdown_days" double precision,
-   "drawdown_duration" double precision,
-   "current_drawdown" double precision,
-   "current_drawdown_days" double precision,
-   "var_95" double precision,
-   "cvar_95" double precision,
-   "volatility" double precision,
-   "downside_deviation" double precision,
-   "tail_ratio" double precision,
-   "skewness" double precision,
-   "kurtosis" double precision,
-   "number_of_trades" double precision,
-   "win_rate" double precision,
-   "loss_rate" double precision,
-   "average_win" double precision,
-   "average_loss" double precision,
-   "average_trade_duration" double precision,
-   "largest_win" double precision,
-   "largest_loss" double precision,
-   "consecutive_wins" double precision,
-   "consecutive_losses" double precision,
-   "avg_trade_return" double precision,
-   "profitability_per_trade" double precision,
-   "total_profit" double precision,
-   "total_loss" double precision,
-   "net_profit" double precision,
-   "gross_profit" double precision,
-   "gross_loss" double precision,
-   "avg_profit_per_trade" double precision,
-   "avg_loss_per_trade" double precision,
-   "profit_loss_ratio" double precision,
-   "winning_months" double precision,
-   "losing_months" double precision,
-   "winning_weeks" double precision,
-   "losing_weeks" double precision,
-   "percentage_positive_months" double precision,
-   "percentage_negative_months" double precision,
-);
-
-CREATE UNIQUE INDEX models_stats_pkey ON stats.models_stats USING btree (backend_model_name);
-"""
-def classify_question(human_input):
-    prompt = f"""
-You are given a database schema and a question. Your task is to classify whether the question requires querying the database for an answer or if it is a generic question. Reply with 1 if the question requires the database and 0 if it does not.
-
-Database Schema:
-{database_schema}
-
-Examples of database-related questions:
-# (Include your examples here)
-
-Question:
-{human_input}
-"""
-    r = ollama.generate(
-        model='llama3',
-        system='''Your task is to classify whether a question requires database access or not. Reply with 1 if the question requires querying the database and 0 if it does not.''',
-        prompt=prompt,
+    # Prompt
+    template = """Use the following pieces of context to answer the question at the end.
+    Use three sentences maximum and keep the answer as concise as possible.
+    {context}
+    Question: {question}
+    Helpful Answer:"""
+    QA_CHAIN_PROMPT = PromptTemplate(
+        input_variables=["context", "question"],
+        template=template,
     )
-    return r['response'].strip()
 
-def generate_sql_query(human_input):
-    prompt = f"""
-You are given a database schema and a question. Your task is to generate a only SQL query that answers the question based on the schema provided. Make sure to properly access the table "stats"."models_stats" and enclose the SQL query in in format like sql```query``` and make sure donot fetch all columns at a time make sure always user limit 10 per rows for each query 
-Database Schema:
-{database_schema}
-
-Question:
-{human_input}
-"""
-    r = ollama.generate(
-        model='llama3',
-        system='''Your task is to generate a SQL query based on the database schema provided. The query should answer the question related to the schema and be properly enclosed in backticks.''',
-        prompt=prompt,
+    llm = Ollama(model="llama3", callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]))
+    qa_chain = RetrievalQA.from_chain_type(
+        llm,
+        retriever=vectorstore.as_retriever(),
+        chain_type_kwargs={"prompt": QA_CHAIN_PROMPT},
     )
-    sql_query = r['response'].strip()
-    # Ensure the query is enclosed in backticks
-    if not sql_query.startswith('`'):
-        sql_query = f'`{sql_query}`'
-    if not sql_query.endswith('`'):
-        sql_query = f'{sql_query}`'
-    return sql_query
 
-def generate_generic_answer(human_input):
-    # Use text data to generate a relevant response
-    prompt = f"""Your role as BitAssist to assit users questions related product Bitpredict and you will behave formally and respond to all questions. 
-You are given a set of FAQ entries related to cryptocurrency forecasting. Your task is to provide a detailed and informative answer to the question based on these entries.
-
-Context:
-{''.join(text_data)}
-
-Question:
-{human_input}
-"""
-    r = ollama.generate(
-        model='llama3',
-        system='''Your role as BitAssist to assit users questions related product Bitpredict and you will behave formally and respond to all questions..''',
-        prompt=prompt,
-    )
-    return r['response'].strip()
-
-def generate_explanation(results, query):
-    prompt = f"""
-You are given a set of results from a SQL query. You will explain in concise way to user in maximum three senstenses with simple english and do not show query to user make sure its confidential and present your answer like you know it already 
-
-SQL Query:
-{query}
-
-Results:
-{results}
-
-Explanation:
-"""
-    r = ollama.generate(
-        model='llama3',
-        system='''Your task is to provide a detailed explanation of the results based on the SQL query.''',
-        prompt=prompt,
-    )
-    return r['response'].strip()
-connection = get_db_connection()
-
-def execute_sql_query(sql_query):
-    if not connection:
-        return generate_generic_answer("Failed to connect to the database.")
-    
-    try:
-        cursor = connection.cursor()
-        # sql_query = sql_query.strip().strip('`')  # Clean up extra characters and backticks
-        print("Sql query received for database -->", sql_query)
-        
-        cursor.execute(sql_query)
-        rows = cursor.fetchall()
-
-        if rows:
-            columns = [desc[0] for desc in cursor.description]
-            results = [dict(zip(columns, row)) for row in rows]
-            
-            results_text = "\n".join([", ".join(f"{key}: {value}" for key, value in result.items()) for result in results])
-            print("Result query -->", results_text)
-            explanation = generate_explanation(results_text, sql_query)
-            
-            return explanation
-        else:
-            return 'No results found for the query.'
-    except Exception as e:
-        # Generate a generic response for errors
-        return generate_generic_answer(f"An error occurred: {e}")
-    finally:
-        cursor.close()
-        connection.close()
-
-def respond_to_question(human_input):
-    classification = classify_question(human_input)
-    
-    if classification == '1':
-        sql_query = generate_sql_query(human_input)
-        sql_query = extract_sql_query(sql_query)
-        # print("Plain sql query -->", sql_query)
-        return execute_sql_query(sql_query)
-    else:
-        return generate_generic_answer(human_input)
-    
-
-
-
-
-@app.route('/ask', methods=['GET'])
-def ask_question():
-    if request.method == 'GET':
-        question = request.args.get('question')
-
-        # if question:
-        try:
-            ans_text = ""
-            # question = request.json.get('question', '')
-            ans_text = respond_to_question(question)
-            print("I am getting response text from llm -->", ans_text)
-            return jsonify({'response': ans_text}), 200
-
-        except Exception as e:
-            return jsonify({'response': f'An error occurred while processing your request: {str(e)}'}), 500
-        # else:
-        #     return jsonify({'message': 'Question parameter is missing'}), 400
-    else:
-        return jsonify({'message': 'Method Not Allowed'}), 405
-
-    
-if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    result = qa_chain({"query": query})
+    print(result)
